@@ -19,6 +19,146 @@ import numpy
 import math
 from enum import Enum
 
+"""
+--------- TARGET PROCESSING ----------
+"""
+
+def process(self, source0):
+    """
+    Runs the pipeline and sets all outputs to new values.
+    """
+
+    #HSL INPUTS BOUNDS
+    hue = [0.0, 155.75757575757575]
+    sat = [52.74280575539568, 255.0]
+    lum = [0.0, 255.0]
+
+    #HSL THRESHOLD STEP
+    hslthreshholdinput = source0
+    out = cv2.cvtColor(hslthresholdinput, cv2.COLOR_BGR2HLS)
+    hslthresholdoutput = cv2.inRange(out, (hue[0], lum[0], sat[0]),  (hue[1], lum[1], sat[1]))
+        
+    #FIND CONTOURS STEP
+    findcontoursinput = hslthresholdoutput
+    external_only = False
+    if(external_only):
+        mode = cv2.RETR_EXTERNAL
+    else:
+        mode = cv2.RETR_LIST
+    method = cv2.CHAIN_APPROX_SIMPLE
+    im2, contours, hierarchy =cv2.findContours(findcontoursinput, mode=mode, method=method)
+    findcontoursoutput = contours
+
+    #FILTER CONTOURS STEP
+    filtercontourscontours = findcontoursoutput
+    input_contours = filtercontourscontours
+
+    min_area = 3000.0
+    min_perimeter = 30.0
+    min_width = 20.0
+    max_width = 1000.0
+    min_height = 20.0
+    max_height = 1000
+    solidity = [0, 100]
+    max_vertex_count = 1000000
+    min_vertex_count = 0
+    min_ratio = 0
+    max_ratio = 1000
+
+    output = []
+    for contour in input_contours:
+        x,y,w,h = cv2.boundingRect(contour)
+        if (w < min_width or w > max_width):
+            continue
+        if (h < min_height or h > max_height):
+            continue
+        area = cv2.contourArea(contour)
+        if (area < min_area):
+            continue
+        if (cv2.arcLength(contour, True) < min_perimeter):
+            continue
+        hull = cv2.convexHull(contour)
+        solid = 100 * area / cv2.contourArea(hull)
+        if (solid < solidity[0] or solid > solidity[1]):
+            continue
+        if (len(contour) < min_vertex_count or len(contour) > max_vertex_count):
+            continue
+            ratio = (float)(w) / h
+        if (ratio < min_ratio or ratio > max_ratio):
+            continue
+        output.append(contour)
+
+    filtercontoursoutput = output
+    return hslthresholdoutput, filtercontoursoutput
+
+class Target:
+    """ A target object that identifies if target is real"""
+
+    def __init__(self, pts, mat):
+        self.topPoint = None
+        self.bottomPoint = None
+        self.leftPoint = None
+        self.rightPoint = None
+        self.uprightDiff = 0
+        self.sideDiff = 0
+        self.proportion = 0
+        self.mat = mat
+        self.points = []
+
+        for i in range(len(pts)):
+            self.points[i] = pts[i]
+
+        topPt = points[0]
+        rightPt = points[0]
+        leftPt = points[0]
+        bottomPt = points[0]
+
+        for pt in self.points:
+            if(pt.x < leftPt.x)
+                leftPt = pt
+            if(pt.x >  rightPt.x)
+                rightPt = pt
+            if(pt.y > topPt.y)
+                topPt = pt
+            if(pt.y < bottomPt.y)
+                bottomPt = pt
+
+        self.center.y = (topPt.y+bottomPt.y)/2
+        self.center.x = (leftPt.x+rightPt.x)/2
+
+        self.uprightDiff = abs(topPt.y - bottomPt.y)
+        self.sideDiff = abs(leftPt.x - rightPt.x)
+
+        self.proportion = self.uprightDiff/self.sideDiff
+
+    def getUprightDiff(self):
+        return self.uprightDiff
+
+    def getSideDiff(self):
+        return self.sideDiff
+
+    def getTopPt(self):
+        return self.topPt
+
+    def getBottomPt(self):
+        return self.bottomPt
+
+    def getRightPt(self):
+        return self.rightPt
+
+    def getLeftPt(self):
+        return self.leftPt
+
+    def getProportion(self):
+        return self.proportion
+
+    def getDistanceFromCenter(self):
+        return self.center.x - self.mat.width()/2
+
+"""
+---------- CAMERA CONFIG -------------
+"""
+
 #   JSON format:
 #   {
 #       "team": <team number>,
@@ -241,111 +381,13 @@ if __name__ == "__main__":
     for config in switchedCameraConfigs:
         startSwitchedCamera(config)
 
-    # loop forever
+    cvsink = CameraServer.getInstance().getVideo()
+    outputstream = CameraServer.getInstance().putVideo("processed", 640, 480)
+    # loop forever (put all processing code here)
     while True:
+        timestamp, img = cvsink.grabFrame(img)
+        output, targetcontours = process(img)
+        outputstream.putFrame(output)
         time.sleep(10)
 
 
-def process(self, source0):
-    """
-    Runs the pipeline and sets all outputs to new values.
-    """
-
-    #HSL INPUTS BOUNDS
-    hue = [0.0, 155.75757575757575]
-    sat = [52.74280575539568, 255.0]
-    lum = [0.0, 255.0]
-
-    #HSL THRESHOLD STEP
-    hslthreshholdinput = source0
-    out = cv2.cvtColor(hslthresholdinput, cv2.COLOR_BGR2HLS)
-    hslthresholdoutput = cv2.inRange(out, (hue[0], lum[0], sat[0]),  (hue[1], lum[1], sat[1]))
-        
-    #FIND CONTOURS STEP
-    findcontoursinput = hslthresholdoutput
-    external_only = False
-    if(external_only):
-        mode = cv2.RETR_EXTERNAL
-    else:
-        mode = cv2.RETR_LIST
-    method = cv2.CHAIN_APPROX_SIMPLE
-    im2, contours, hierarchy =cv2.findContours(findcontoursinput, mode=mode, method=method)
-    findcontoursoutput = contours
-
-    #FILTER CONTOURS STEP
-    filtercontourscontours = findcontoursoutput
-    input_contours = filtercontourscontours
-
-    min_area = 3000.0
-    min_perimeter = 30.0
-    min_width = 20.0
-    max_width = 1000.0
-    min_height = 20.0
-    max_height = 1000
-    solidity = [0, 100]
-    max_vertex_count = 1000000
-    min_vertex_count = 0
-    min_ratio = 0
-    max_ratio = 1000
-
-    output = []
-    for contour in input_contours:
-        x,y,w,h = cv2.boundingRect(contour)
-        if (w < min_width or w > max_width):
-            continue
-        if (h < min_height or h > max_height):
-            continue
-        area = cv2.contourArea(contour)
-        if (area < min_area):
-            continue
-        if (cv2.arcLength(contour, True) < min_perimeter):
-            continue
-        hull = cv2.convexHull(contour)
-        solid = 100 * area / cv2.contourArea(hull)
-        if (solid < solidity[0] or solid > solidity[1]):
-            continue
-        if (len(contour) < min_vertex_count or len(contour) > max_vertex_count):
-            continue
-            ratio = (float)(w) / h
-        if (ratio < min_ratio or ratio > max_ratio):
-            continue
-        output.append(contour)
-
-    filtercontoursoutput = output
-
-class Target:
-    """ A target object that identifies if target is real"""
-
-    def __init__(self, pts, mat):
-        self.topPoint = None
-        self.bottomPoint = None
-        self.leftPoint = None
-        self.rightPoint = None
-        self.uprightDiff = 0
-        self.sideDiff = 0
-        self.proportion = 0
-        self.mat = mat
-        self.points = []
-
-        for i in range(len(pts)):
-            self.points[i] = pts[i]
-
-        topPt = points[0]
-        rightPt = points[0]
-        leftPt = points[0]
-        bottomPt = points[0]
-
-        for pt in self.points:
-            if(pt.x < leftPt.x)
-                leftPt = pt
-            if(pt.x >  rightPt.x)
-                rightPt = pt
-            if(pt.y > topPt.y)
-                topPt = pt
-            if(pt.y < bottomPt.y)
-                bottomPt = pt
-
-        self.center.y = (topPt.y+bottomPt.y)/2
-        self.center.x = (leftPt.x+rightPt.x)/2
-
-        
