@@ -14,8 +14,9 @@ from cscore import CameraServer, VideoSource, UsbCamera, MjpegServer
 from networktables import NetworkTablesInstance
 import ntcore
 
+# import opencv
 import cv2
-import numpy
+import numpy as np
 import math
 from enum import Enum
 
@@ -23,7 +24,7 @@ from enum import Enum
 --------- TARGET PROCESSING ----------
 """
 
-def process(self, source0):
+def process(source0):
     """
     Runs the pipeline and sets all outputs to new values.
     """
@@ -34,8 +35,8 @@ def process(self, source0):
     lum = [0.0, 255.0]
 
     #HSL THRESHOLD STEP
-    hslthreshholdinput = source0
-    out = cv2.cvtColor(hslthresholdinput, cv2.COLOR_BGR2HLS)
+    # hslthreshholdinput = source0
+    out = cv2.cvtColor(source0, cv2.COLOR_BGR2HLS)
     hslthresholdoutput = cv2.inRange(out, (hue[0], lum[0], sat[0]),  (hue[1], lum[1], sat[1]))
         
     #FIND CONTOURS STEP
@@ -83,53 +84,57 @@ def process(self, source0):
             continue
         if (len(contour) < min_vertex_count or len(contour) > max_vertex_count):
             continue
-            ratio = (float)(w) / h
+        ratio = (float)(w) / h
         if (ratio < min_ratio or ratio > max_ratio):
             continue
         output.append(contour)
 
     filtercontoursoutput = output
-    return hslthresholdoutput, filtercontoursoutput
+    return hslthresholdoutput, output
 
 class Target:
     """ A target object that identifies if target is real"""
 
     def __init__(self, pts, mat):
-        self.topPoint = None
-        self.bottomPoint = None
-        self.leftPoint = None
-        self.rightPoint = None
+        self.topPt = None
+        self.bottomPt = None
+        self.leftPt = None
+        self.rightPt = None
         self.uprightDiff = 0
         self.sideDiff = 0
         self.proportion = 0
+        self.inverseProportion = 0
         self.mat = mat
         self.points = []
 
-        for i in range(len(pts)):
-            self.points[i] = pts[i]
+        for i in range(pts.shape[0]):
+            self.points.append(pts[i])
 
-        topPt = points[0]
-        rightPt = points[0]
-        leftPt = points[0]
-        bottomPt = points[0]
+        self.topPt = points[0]
+        self.rightPt = points[0]
+        self.leftPt = points[0]
+        self.bottomPt = points[0]
 
         for pt in self.points:
-            if(pt.x < leftPt.x)
-                leftPt = pt
-            if(pt.x >  rightPt.x)
-                rightPt = pt
-            if(pt.y > topPt.y)
-                topPt = pt
-            if(pt.y < bottomPt.y)
-                bottomPt = pt
+          
+            if(pt[0] < self.leftPt[0]):
+                self.leftPt = pt
+            if(pt[0] >  self.rightPt[0]):
+                self.rightPt = pt
+            if(pt[1] > self.topPt[1]):
+                self.topPt = pt
+            if(pt[1] < self.bottomPt[1]):
+                self.bottomPt = pt
 
-        self.center.y = (topPt.y+bottomPt.y)/2
-        self.center.x = (leftPt.x+rightPt.x)/2
+        self.center = [0,0]
+        self.center[1] = (self.topPt[1]+self.bottomPt[1])/2
+        self.center[0] = (self.leftPt[0]+self.rightPt[0])/2
 
-        self.uprightDiff = abs(topPt.y - bottomPt.y)
-        self.sideDiff = abs(leftPt.x - rightPt.x)
+        self.uprightDiff = abs(self.topPt[1] - self.bottomPt[1])
+        self.sideDiff = abs(self.leftPt[0] - self.rightPt[0])
 
         self.proportion = self.uprightDiff/self.sideDiff
+        self.inverseProportion = self.sideDiff/self.uprightDiff
 
     def getUprightDiff(self):
         return self.uprightDiff
@@ -153,7 +158,15 @@ class Target:
         return self.proportion
 
     def getDistanceFromCenter(self):
-        return self.center.x - self.mat.width()/2
+        return self.center[0] - self.mat.shape[1]/2
+        # return self.center[0] - self.mat.width()/2
+
+    def isCentered(self):
+        return abs(self.getDistanceFromCenter()) < 30
+
+    def getInverseProportion(self):
+        return self.inverseProportion
+
 
 """
 ---------- CAMERA CONFIG -------------
@@ -356,6 +369,7 @@ def startSwitchedCamera(config):
 
 
 if __name__ == "__main__":
+
     if len(sys.argv) >= 2:
         configFile = sys.argv[1]
 
@@ -381,13 +395,42 @@ if __name__ == "__main__":
     for config in switchedCameraConfigs:
         startSwitchedCamera(config)
 
+    #gets and sets frames onto networktables
     cvsink = CameraServer.getInstance().getVideo()
     outputstream = CameraServer.getInstance().putVideo("processed", 640, 480)
+    
     # loop forever (put all processing code here)
+    img = np.zeros(shape=(480,640,3), dtype = np.uint8)
+
     while True:
         timestamp, img = cvsink.grabFrame(img)
-        output, targetcontours = process(img)
+        #print("AAAAAA {}".format(timestamp))
+        output, filteredPoints = process(img)
         outputstream.putFrame(output)
-        time.sleep(10)
 
+        validTargets = []
+        leftMostTarget = None
+        points = None
+        target = None
+        
+        for currentMat in filteredPoints:
+            points = np.reshape(currentMat, (currentMat.shape[0], 2))
+            target = Target(points, img)
+            validTargets.append(target)
+        
+        if(len(validTargets)> 0):
 
+            leftMostTarget = validTargets[0]
+            for t in validTargets:
+                if t.getProportion() > 1.4 or t.getInverseProportion() > 1.4:
+                    continue
+                
+                if t.getProportion() > .92 and t.getInverseProportion() > 1.08:
+                    leftMostTarget = t
+
+            isCentered = table.getEntry("isCentered")
+            isCentered.setBoolean(leftMostTarget.isCentered())
+            distanceFromCenter = table.getEntry("distanceFromCenter")
+            distanceFromCenter.setDouble(leftMostTarget.getDistanceFromCenter())
+
+        time.sleep(0.14)
