@@ -159,7 +159,6 @@ class Target:
 
     def getDistanceFromCenter(self):
         return self.center[0] - self.mat.shape[1]/2
-        # return self.center[0] - self.mat.width()/2
 
     def isCentered(self):
         return abs(self.getDistanceFromCenter()) < 30
@@ -402,6 +401,9 @@ if __name__ == "__main__":
     # loop forever (put all processing code here)
     img = np.zeros(shape=(480,640,3), dtype = np.uint8)
 
+    isCentered = table.getEntry("isCentered")
+    distanceFromCenter = table.getEntry("distanceFromCenter")
+
     while True:
         timestamp, img = cvsink.grabFrame(img)
         #print("AAAAAA {}".format(timestamp))
@@ -419,7 +421,6 @@ if __name__ == "__main__":
             validTargets.append(target)
         
         if(len(validTargets)> 0):
-
             leftMostTarget = validTargets[0]
             for t in validTargets:
                 if t.getProportion() > 1.4 or t.getInverseProportion() > 1.4:
@@ -428,9 +429,9 @@ if __name__ == "__main__":
                 if t.getProportion() > .92 and t.getInverseProportion() > 1.08:
                     leftMostTarget = t
 
-            isCentered = table.getEntry("isCentered")
+            print(leftMostTarget.getDistanceFromCenter())
+            print(leftMostTarget.isCentered())
             isCentered.setBoolean(leftMostTarget.isCentered())
-            distanceFromCenter = table.getEntry("distanceFromCenter")
             distanceFromCenter.setDouble(leftMostTarget.getDistanceFromCenter())
 
         time.sleep(0.14)
