@@ -15,6 +15,7 @@ from networktables import NetworkTablesInstance
 import ntcore
 
 # import opencv
+import logging
 import cv2
 import numpy as np
 import math
@@ -159,6 +160,7 @@ class Target:
 
     def getDistanceFromCenter(self):
         return self.center[0] - self.mat.shape[1]/2
+        # return self.center[0] - self.mat.width()/2
 
     def isCentered(self):
         return abs(self.getDistanceFromCenter()) < 30
@@ -376,6 +378,8 @@ if __name__ == "__main__":
     if not readConfig():
         sys.exit(1)
 
+    logging.basicConfig(level = logging.DEBUG)
+
     # start NetworkTables
     ntinst = NetworkTablesInstance.getDefault()
     if server:
@@ -396,17 +400,14 @@ if __name__ == "__main__":
 
     #gets and sets frames onto networktables
     cvsink = CameraServer.getInstance().getVideo()
-    outputstream = CameraServer.getInstance().putVideo("processed", 640, 480)
+    outputstream = CameraServer.getInstance().putVideo("processed", 160 , 120)
     
     # loop forever (put all processing code here)
-    img = np.zeros(shape=(480,640,3), dtype = np.uint8)
-
-    isCentered = table.getEntry("isCentered")
-    distanceFromCenter = table.getEntry("distanceFromCenter")
+    img = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
     while True:
         timestamp, img = cvsink.grabFrame(img)
-        #print("AAAAAA {}".format(timestamp))
+        print("AAAAAA {}".format(timestamp))
         output, filteredPoints = process(img)
         outputstream.putFrame(output)
 
@@ -421,6 +422,7 @@ if __name__ == "__main__":
             validTargets.append(target)
         
         if(len(validTargets)> 0):
+
             leftMostTarget = validTargets[0]
             for t in validTargets:
                 if t.getProportion() > 1.4 or t.getInverseProportion() > 1.4:
@@ -429,9 +431,10 @@ if __name__ == "__main__":
                 if t.getProportion() > .92 and t.getInverseProportion() > 1.08:
                     leftMostTarget = t
 
-            print(leftMostTarget.getDistanceFromCenter())
-            print(leftMostTarget.isCentered())
+            isCentered = table.getEntry("isCentered")
             isCentered.setBoolean(leftMostTarget.isCentered())
+            distanceFromCenter = table.getEntry("distanceFromCenter")
             distanceFromCenter.setDouble(leftMostTarget.getDistanceFromCenter())
+            print(table.getEntry("isCentered").getBoolean(False))
 
-        time.sleep(0.14)
+        time.sleep(1)
