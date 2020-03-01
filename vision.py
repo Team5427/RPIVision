@@ -21,24 +21,26 @@ import numpy as np
 import math
 from enum import Enum
 
+
 """
 --------- TARGET PROCESSING ----------
 """
 
-def process(source0):
+
+def processTarget(source0):
     """
     Runs the pipeline and sets all outputs to new values.
     """
 
     #HSL INPUTS BOUNDS
-    hue = [0.0, 155.75757575757575]
-    sat = [52.74280575539568, 255.0]
-    lum = [0.0, 255.0]
+    hue = [44, 83.0]
+    sat = [85, 255.0]
+    val = [21, 255]
 
     #HSL THRESHOLD STEP
     # hslthreshholdinput = source0
     out = cv2.cvtColor(source0, cv2.COLOR_BGR2HLS)
-    hslthresholdoutput = cv2.inRange(out, (hue[0], lum[0], sat[0]),  (hue[1], lum[1], sat[1]))
+    hslthresholdoutput = cv2.inRange(out, (hue[0], val[0], sat[0]),  (hue[1], val[1], sat[1]))
         
     #FIND CONTOURS STEP
     findcontoursinput = hslthresholdoutput
@@ -55,12 +57,12 @@ def process(source0):
     filtercontourscontours = findcontoursoutput
     input_contours = filtercontourscontours
 
-    min_area = 3000.0
-    min_perimeter = 30.0
+    min_area = 20.0
+    min_perimeter = 0.0
     min_width = 20.0
-    max_width = 1000.0
+    max_width = 4000.0
     min_height = 20.0
-    max_height = 1000
+    max_height = 4000
     solidity = [0, 100]
     max_vertex_count = 1000000
     min_vertex_count = 0
@@ -93,67 +95,69 @@ def process(source0):
     filtercontoursoutput = output
     return hslthresholdoutput, output
 
+
 class Target:
-    """ A target object that identifies if target is real"""
+    """ A Target object that identifies if target is real"""
 
     def __init__(self, pts, mat):
-        self.topPt = None
-        self.bottomPt = None
-        self.leftPt = None
-        self.rightPt = None
-        self.uprightDiff = 0
-        self.sideDiff = 0
+        
+        self.topLeftPt = None
+        self.topRightPt = None
+        self.bottomLeftPt = None
+        self.bottomRightPt = None
+        self.bottomPtVal = 0
+        self.leftValDiff = 0
+        self.rightValDiff = 0
         self.proportion = 0
-        self.inverseProportion = 0
+        self.size = 0
         self.mat = mat
         self.points = []
 
         for i in range(pts.shape[0]):
             self.points.append(pts[i])
 
-        self.topPt = points[0]
-        self.rightPt = points[0]
-        self.leftPt = points[0]
-        self.bottomPt = points[0]
+        self.topLeftPt = points[0]
+        self.topRightPt = points[0]
+        self.bottomLeftPt = points[0]
+        self.bottomRightPt = points[0]
 
         for pt in self.points:
           
-            if(pt[0] < self.leftPt[0]):
-                self.leftPt = pt
-            if(pt[0] >  self.rightPt[0]):
-                self.rightPt = pt
-            if(pt[1] > self.topPt[1]):
-                self.topPt = pt
-            if(pt[1] < self.bottomPt[1]):
-                self.bottomPt = pt
+            if(pt[0] < self.topLeftPt[0]):
+                self.topLeftPt = pt
+            if(pt[0] >  self.topRightPt[0]):
+                self.topRightPt = pt
+            if(pt[1] > self.bottomPtVal):
+                self.bottomPtVal = pt[1]
+           
 
         self.center = [0,0]
-        self.center[1] = (self.topPt[1]+self.bottomPt[1])/2
-        self.center[0] = (self.leftPt[0]+self.rightPt[0])/2
+        self.center[1] = ((self.topLeftPt[1]+self.bottomPtVal)/2) + ((self.topRightPt[1]+self.bottomPtVal)/2)/2
+        self.center[0] = (self.topLeftPt[0]+self.topRightPt[0])/2
 
-        self.uprightDiff = abs(self.topPt[1] - self.bottomPt[1])
-        self.sideDiff = abs(self.leftPt[0] - self.rightPt[0])
+        self.leftValDiff = abs(self.topLeftPt[1] - self.bottomPtVal)
+        self.rightValDiff = abs(self.topRightPt[1] - self.bottomPtVal)
 
-        self.proportion = self.uprightDiff/self.sideDiff
-        self.inverseProportion = self.sideDiff/self.uprightDiff
+        self.proportion = self.leftValDiff/self.rightValDiff
+        self.size = (self.leftValDiff+self.rightValDiff)/2
 
-    def getUprightDiff(self):
-        return self.uprightDiff
+    def getLeftValDiff(self):
+        return self.leftValDiff
 
-    def getSideDiff(self):
-        return self.sideDiff
+    def getRightValDiff(self):
+        return self.rightValDiff
 
-    def getTopPt(self):
-        return self.topPt
+    def getTopLeftPt(self):
+        return self.topLeftPt
 
-    def getBottomPt(self):
-        return self.bottomPt
+    def getBottomLeftPt(self):
+        return self.bottomLeftPt
 
-    def getRightPt(self):
-        return self.rightPt
+    def getTopRightPoint(self):
+        return self.topRightPt
 
-    def getLeftPt(self):
-        return self.leftPt
+    def getBottomRightPoint(self):
+        return self.bottomRightPt
 
     def getProportion(self):
         return self.proportion
@@ -163,10 +167,10 @@ class Target:
         # return self.center[0] - self.mat.width()/2
 
     def isCentered(self):
-        return abs(self.getDistanceFromCenter()) < 30
+        return abs(self.getDistanceFromCenter()) < 2
 
-    def getInverseProportion(self):
-        return self.inverseProportion
+    def getSize(self):
+        return self.size
 
 
 """
@@ -400,19 +404,19 @@ if __name__ == "__main__":
 
     #gets and sets frames onto networktables
     cvsink = CameraServer.getInstance().getVideo()
-    outputstream = CameraServer.getInstance().putVideo("processed", 160 , 120)
+    outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160 , 120)
     
     # loop forever (put all processing code here)
     img = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
     while True:
         timestamp, img = cvsink.grabFrame(img)
-        print("AAAAAA {}".format(timestamp))
-        output, filteredPoints = process(img)
+      #  print("AAAAAA {}".format(timestamp))
+        output, filteredPoints = processTarget(img)
         outputstream.putFrame(output)
 
         validTargets = []
-        leftMostTarget = None
+        biggestTarget = None
         points = None
         target = None
         
@@ -421,20 +425,31 @@ if __name__ == "__main__":
             target = Target(points, img)
             validTargets.append(target)
         
+       
         if(len(validTargets)> 0):
-
-            leftMostTarget = validTargets[0]
-            for t in validTargets:
-                if t.getProportion() > 1.4 or t.getInverseProportion() > 1.4:
-                    continue
+            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            biggestTarget = validTargets[0]
+            for target in validTargets:
                 
-                if t.getProportion() > .92 and t.getInverseProportion() > 1.08:
-                    leftMostTarget = t
+                if target.getLeftValDiff()>biggestTarget.getLeftValDiff():
+                    biggestTarget = target
 
-            isCentered = table.getEntry("isCentered")
-            isCentered.setBoolean(leftMostTarget.isCentered())
-            distanceFromCenter = table.getEntry("distanceFromCenter")
-            distanceFromCenter.setDouble(leftMostTarget.getDistanceFromCenter())
-            print(table.getEntry("isCentered").getBoolean(False))
+            isTargetCentered = table.getEntry("isTargetCentered")
+            isTargetCentered.setBoolean(biggestTarget.isCentered())
+            targetDistanceFromCenter = table.getEntry("targetDistanceFromCenter")
+            targetDistanceFromCenter.setDouble(biggestTarget.getDistanceFromCenter())
+            biggestSideDifference = table.getEntry("biggestSideDifference")
 
-        time.sleep(1)
+            if(biggestTarget.getDistanceFromCenter()>0):
+                biggestSideDifference.setDouble(biggestTarget.getLeftValDiff())
+
+            if(biggestTarget.getDistanceFromCenter()<0):
+                biggestSideDifference.setDouble(biggestTarget.getRightValDiff())
+
+
+            print(table.getEntry("isTargetCentered").getBoolean(False))
+        else:
+             print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+        
+            
+
