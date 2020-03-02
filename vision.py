@@ -424,26 +424,27 @@ if __name__ == "__main__":
     outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160 , 120)
     outputstream2 = CameraServer.getInstance().putVideo("BallProcessed", 160 , 120)
 
-  #  outputstream2 = CameraServer.getInstance().putVideo("PROCESSING 2", 160 , 120)
-
     # loop forever (put all processing code here)
     img = np.zeros(shape=(120,160,3), dtype = np.uint8)
     img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
-  #  img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
-
     while True:
         timestamp, img = cvsink.grabFrame(img)
+        timestamp2, img2 = cvsink2.grabFrame(img2)
+        timestamp3, img3 = cvsink3.grabFrame(img3)
+
+
       #  print("AAAAAA {}".format(timestamp))
         output, filteredPoints = processTarget(img)
         output2, filteredPoints2 = processTarget(img2)
 
-
-    #    timestamp2, img2 = cvsink2.grabFrame(img2)
-    #    output2, filteredPoints2 = processTarget(img2)
-        
+        ballOrDriver = table.getEntry("ballOrDriver").getBoolean(False)
         outputstream.putFrame(output)
-        outputstream2.putFrame(output2)
+
+        if ballOrDriver:
+            outputstream2.putFrame(output2)
+        else: 
+            outputstream2.putFrame(img3)
 
         
     #    outputstream2.putFrame(output2)
@@ -469,17 +470,22 @@ if __name__ == "__main__":
 
             isTargetCentered = table.getEntry("isTargetCentered")
             isTargetCentered.setBoolean(biggestTarget.isCentered())
+
             targetDistanceFromCenter = table.getEntry("targetDistanceFromCenter")
             targetDistanceFromCenter.setDouble(biggestTarget.getDistanceFromCenter())
+
             biggestSideDifference = table.getEntry("biggestSideDifference")
             biggestSideDifference.setDouble(biggestTarget.getBiggestSideDifference())
+
             proportion = table.getEntry("proportion")
             proportion.setDouble(biggestTarget.getProportion())
+
             size = table.getEntry("size")
             size.setDouble(biggestTarget.getSize())
+
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
-             print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+            print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
         
             
 
