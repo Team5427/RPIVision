@@ -147,6 +147,12 @@ class Target:
     def getRightValDiff(self):
         return self.rightValDiff
 
+    def getBiggestSideDifference(self):
+        if(self.rightValDiff>self.leftValDiff):
+            return self.rightValDiff
+        else:
+             return self.leftValDiff
+
     def getTopLeftPt(self):
         return self.topLeftPt
 
@@ -165,9 +171,13 @@ class Target:
     def getDistanceFromCenter(self):
         return self.center[0] - self.mat.shape[1]/2
         # return self.center[0] - self.mat.width()/2
+    
+    def getMatWidthHalf(self):
+        return self.mat.shape[1]/2
+
 
     def isCentered(self):
-        return abs(self.getDistanceFromCenter()) < 2
+        return abs(self.getDistanceFromCenter()) < 4
 
     def getSize(self):
         return self.size
@@ -403,17 +413,40 @@ if __name__ == "__main__":
         startSwitchedCamera(config)
 
     #gets and sets frames onto networktables
-    cvsink = CameraServer.getInstance().getVideo()
-    outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160 , 120)
+    cam1 = CameraServer.getInstance()
+    cam2 = CameraServer.getInstance()
+    cam3 = CameraServer.getInstance()
     
+    cvsink = cam1.getVideo()
+    cvsink2 = cam2.getVideo()
+    cvsink3 = cam3.getVideo()
+
+    outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160 , 120)
+    outputstream2 = CameraServer.getInstance().putVideo("BallProcessed", 160 , 120)
+
+  #  outputstream2 = CameraServer.getInstance().putVideo("PROCESSING 2", 160 , 120)
+
     # loop forever (put all processing code here)
     img = np.zeros(shape=(120,160,3), dtype = np.uint8)
+    img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
+
+  #  img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
     while True:
         timestamp, img = cvsink.grabFrame(img)
       #  print("AAAAAA {}".format(timestamp))
         output, filteredPoints = processTarget(img)
+        output2, filteredPoints2 = processTarget(img2)
+
+
+    #    timestamp2, img2 = cvsink2.grabFrame(img2)
+    #    output2, filteredPoints2 = processTarget(img2)
+        
         outputstream.putFrame(output)
+        outputstream2.putFrame(output2)
+
+        
+    #    outputstream2.putFrame(output2)
 
         validTargets = []
         biggestTarget = None
@@ -431,7 +464,7 @@ if __name__ == "__main__":
             biggestTarget = validTargets[0]
             for target in validTargets:
                 
-                if target.getLeftValDiff()>biggestTarget.getLeftValDiff():
+                if target.getBiggestSideDifference()>biggestTarget.getBiggestSideDifference():
                     biggestTarget = target
 
             isTargetCentered = table.getEntry("isTargetCentered")
@@ -439,14 +472,11 @@ if __name__ == "__main__":
             targetDistanceFromCenter = table.getEntry("targetDistanceFromCenter")
             targetDistanceFromCenter.setDouble(biggestTarget.getDistanceFromCenter())
             biggestSideDifference = table.getEntry("biggestSideDifference")
-
-            if(biggestTarget.getDistanceFromCenter()>0):
-                biggestSideDifference.setDouble(biggestTarget.getLeftValDiff())
-
-            if(biggestTarget.getDistanceFromCenter()<0):
-                biggestSideDifference.setDouble(biggestTarget.getRightValDiff())
-
-
+            biggestSideDifference.setDouble(biggestTarget.getBiggestSideDifference())
+            proportion = table.getEntry("proportion")
+            proportion.setDouble(biggestTarget.getProportion())
+            size = table.getEntry("size")
+            size.setDouble(biggestTarget.getSize())
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
              print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
