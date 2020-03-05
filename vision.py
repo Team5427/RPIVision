@@ -113,6 +113,7 @@ class Target:
         self.mat = mat
         self.points = []
 
+
         for i in range(pts.shape[0]):
             self.points.append(pts[i])
 
@@ -135,11 +136,14 @@ class Target:
         self.center[1] = ((self.topLeftPt[1]+self.bottomPtVal)/2) + ((self.topRightPt[1]+self.bottomPtVal)/2)/2
         self.center[0] = (self.topLeftPt[0]+self.topRightPt[0])/2
 
+
         self.leftValDiff = abs(self.topLeftPt[1] - self.bottomPtVal)
         self.rightValDiff = abs(self.topRightPt[1] - self.bottomPtVal)
 
         self.proportion = self.leftValDiff/self.rightValDiff
-        self.size = (self.leftValDiff+self.rightValDiff)/2
+        self.size = ((self.leftValDiff+self.rightValDiff)/2)
+
+        
 
     def getLeftValDiff(self):
         return self.leftValDiff
@@ -414,21 +418,21 @@ if __name__ == "__main__":
 
     #gets and sets frames onto networktables
     cam1 = CameraServer.getInstance()
-    cam2 = CameraServer.getInstance()
-    cam3 = CameraServer.getInstance()
+  #  cam2 = CameraServer.getInstance()
+  #  cam3 = CameraServer.getInstance()
     
     cvsink = cam1.getVideo()
-    cvsink2 = cam2.getVideo()
-    cvsink3 = cam3.getVideo()
+  #  cvsink2 = cam2.getVideo()
+  #  cvsink3 = cam3.getVideo()
 
     outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160 , 120)
-    outputstream2 = CameraServer.getInstance().putVideo("BallProcessed", 160 , 120)
+    #outputstream2 = CameraServer.getInstance().putVideo("BallProcessed", 160 , 120)
 
   #  outputstream2 = CameraServer.getInstance().putVideo("PROCESSING 2", 160 , 120)
 
     # loop forever (put all processing code here)
     img = np.zeros(shape=(120,160,3), dtype = np.uint8)
-    img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
+  #  img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
   #  img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
@@ -436,14 +440,14 @@ if __name__ == "__main__":
         timestamp, img = cvsink.grabFrame(img)
       #  print("AAAAAA {}".format(timestamp))
         output, filteredPoints = processTarget(img)
-        output2, filteredPoints2 = processTarget(img2)
+   #     output2, filteredPoints2 = processTarget(img2)
 
 
     #    timestamp2, img2 = cvsink2.grabFrame(img2)
     #    output2, filteredPoints2 = processTarget(img2)
         
         outputstream.putFrame(output)
-        outputstream2.putFrame(output2)
+   #     outputstream2.putFrame(output2)
 
         
     #    outputstream2.putFrame(output2)
@@ -460,6 +464,8 @@ if __name__ == "__main__":
         
        
         if(len(validTargets)> 0):
+            targetExists = table.getEntry("targetExists")
+            targetExists.setBoolean(True)
             print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             biggestTarget = validTargets[0]
             for target in validTargets:
@@ -479,7 +485,5 @@ if __name__ == "__main__":
             size.setDouble(biggestTarget.getSize())
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
-             print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
-        
-            
-
+            print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+            targetExists.setBoolean(False)
