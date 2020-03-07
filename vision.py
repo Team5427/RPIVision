@@ -418,12 +418,10 @@ if __name__ == "__main__":
 
     #gets and sets frames onto networktables
     cam1 = CameraServer.getInstance()
-  #  cam2 = CameraServer.getInstance()
-  #  cam3 = CameraServer.getInstance()
+    cam2 = CameraServer.getInstance()
     
     cvsink = cam1.getVideo()
-  #  cvsink2 = cam2.getVideo()
-  #  cvsink3 = cam3.getVideo()
+    cvsink2 = cam2.getVideo()
 
     outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160 , 120)
     #outputstream2 = CameraServer.getInstance().putVideo("BallProcessed", 160 , 120)
@@ -437,7 +435,7 @@ if __name__ == "__main__":
   #  img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
     while True:
-        timestamp, img = cvsink.grabFrame(img)
+        timestamp, img = cvSink.grabFrame(img)
       #  print("AAAAAA {}".format(timestamp))
         output, filteredPoints = processTarget(img)
    #     output2, filteredPoints2 = processTarget(img2)
@@ -462,9 +460,9 @@ if __name__ == "__main__":
             target = Target(points, img)
             validTargets.append(target)
         
-       
+        targetExists = table.getEntry("targetExists")
+
         if(len(validTargets)> 0):
-            targetExists = table.getEntry("targetExists")
             targetExists.setBoolean(True)
             print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             biggestTarget = validTargets[0]
