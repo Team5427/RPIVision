@@ -112,6 +112,11 @@ class Target:
         self.size = 0
         self.mat = mat
         self.points = []
+        self.targetWidth = 3.25
+        self.FOV_horizontal = 61
+        self.FOV_vertical = 34.3
+        self.FOV_pixel = self.mat.shape[1]
+        self.Tft = 3.2708333 #3' 3.75"
 
 
         for i in range(pts.shape[0]):
@@ -131,18 +136,17 @@ class Target:
             if(pt[1] > self.bottomPtVal):
                 self.bottomPtVal = pt[1]
            
+        self.Tpixel = self.topRightPt[0] - self.topLeftPt[0]
 
         self.center = [0,0]
         self.center[1] = ((self.topLeftPt[1]+self.bottomPtVal)/2) + ((self.topRightPt[1]+self.bottomPtVal)/2)/2
         self.center[0] = (self.topLeftPt[0]+self.topRightPt[0])/2
-
 
         self.leftValDiff = abs(self.topLeftPt[1] - self.bottomPtVal)
         self.rightValDiff = abs(self.topRightPt[1] - self.bottomPtVal)
 
         self.proportion = self.leftValDiff/self.rightValDiff
         self.size = ((self.leftValDiff+self.rightValDiff)/2)
-
         
 
     def getLeftValDiff(self):
@@ -174,17 +178,26 @@ class Target:
 
     def getDistanceFromCenter(self):
         return self.center[0] - self.mat.shape[1]/2
-        # return self.center[0] - self.mat.width()/2
     
     def getMatWidthHalf(self):
         return self.mat.shape[1]/2
-
 
     def isCentered(self):
         return abs(self.getDistanceFromCenter()) < 4
 
     def getSize(self):
         return self.size
+
+    def getDistanceFromTarget(self):
+        theta = math.radians(self.FOV_horizontal/2)
+        return self.Tft * self.FOV_pixel/(2*self.Tpixel* math.tan(theta))
+
+    """
+    Returns yaw in degrees
+    """
+    def getYawFromTarget(self):
+        return self.getDistanceFromCenter() * self.FOV_horizontal/self.FOV_pixel
+
 
 
 """
@@ -423,25 +436,19 @@ if __name__ == "__main__":
     cvsink = cam1.getVideo()
     cvsink2 = cam2.getVideo()
 
-    outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160 , 120)
+    outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160, 120)
     #outputstream2 = CameraServer.getInstance().putVideo("BallProcessed", 160 , 120)
 
     # loop forever (put all processing code here)
     img = np.zeros(shape=(120,160,3), dtype = np.uint8)
-  #  img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
+
 
     while True:
         timestamp, img = cvSink.grabFrame(img)
-      #  print("AAAAAA {}".format(timestamp))
         output, filteredPoints = processTarget(img)
-   #     output2, filteredPoints2 = processTarget(img2)
 
         ballOrDriver = table.getEntry("ballOrDriver").getBoolean(False)
         outputstream.putFrame(output)
-   #     outputstream2.putFrame(output2)
-
-        
-    #    outputstream2.putFrame(output2)
 
         validTargets = []
         biggestTarget = None
@@ -457,11 +464,10 @@ if __name__ == "__main__":
 
         if(len(validTargets)> 0):
             targetExists.setBoolean(True)
-            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            
             biggestTarget = validTargets[0]
             for target in validTargets:
-                
-                if target.getBiggestSideDifference()>biggestTarget.getBiggestSideDifference():
+                if target.getBiggestSideDifference() > biggestTarget.getBiggestSideDifference():
                     biggestTarget = target
 
             isTargetCentered = table.getEntry("isTargetCentered")
@@ -478,6 +484,12 @@ if __name__ == "__main__":
 
             size = table.getEntry("size")
             size.setDouble(biggestTarget.getSize())
+
+            distanceFromTarget = table.getEntry("distanceFromTarget")
+            distanceFromTarget.setDouble(biggestTarget.getDistanceFromTarget())
+
+            yawFromTarget = table.getEntry("yawFromTarget")
+            yawFromTarget.setDouble(biggestTarget.getYawFromTarget())
 
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
