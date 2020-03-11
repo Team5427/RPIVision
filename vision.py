@@ -509,6 +509,9 @@ if __name__ == "__main__":
             pitchFromTarget = table.getEntry("pitchFromTarget")
             pitchFromTarget.setDouble(biggestTarget.getPitchFromTarget())
 
+            targetHeight = table.getEntry("targetHeight")
+            targetHeight.setDouble(biggestTarget.getTargetHeight())
+
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
             print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
