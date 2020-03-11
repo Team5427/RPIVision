@@ -117,6 +117,7 @@ class Target:
         self.FOV_vertical = 34.3
         self.FOV_pixel = self.mat.shape[1]
         self.Tft = 3.2708333 #3' 3.75"
+        self.focal_length =  self.mat.shape[1]/(2 * math.tan((self.FOV_horizontal/2)))
 
 
         for i in range(pts.shape[0]):
@@ -196,9 +197,16 @@ class Target:
     Returns yaw in degrees
     """
     def getYawFromTarget(self):
-        return self.getDistanceFromCenter() * self.FOV_horizontal/self.FOV_pixel
+        f = self.focal_length
+        u = self.center[0]
+        cx = self.mat.shape[1]/2
+        return math.atan((u-cx)/f)
 
-
+    def getPitchFromTarget(self):
+        f = self.focal_length
+        v = self.center[1]
+        cy = self.mat.shape[2]/2
+        return math.atan((v-cy)/f)
 
 """
 ---------- CAMERA CONFIG -------------
@@ -490,6 +498,9 @@ if __name__ == "__main__":
 
             yawFromTarget = table.getEntry("yawFromTarget")
             yawFromTarget.setDouble(biggestTarget.getYawFromTarget())
+
+            pitchFromTarget = table.getEntry("pitchFromTarget")
+            pitchFromTarget.setDouble(biggestTarget.getPitchFromTarget())
 
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
