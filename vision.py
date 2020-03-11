@@ -118,6 +118,7 @@ class Target:
         self.FOV_pixel = self.mat.shape[1]
         self.Tft = 3.2708333 #3' 3.75"
         self.focal_length =  self.mat.shape[1]/(2 * math.tan((self.FOV_horizontal/2)))
+        self.camTilt = 0 #degrees not radians
 
 
         for i in range(pts.shape[0]):
@@ -200,13 +201,15 @@ class Target:
         f = self.focal_length
         u = self.center[0]
         cx = self.mat.shape[1]/2
-        return math.atan((u-cx)/f)
+        theta = math.atan((u-cx)/f)
+        return math.degrees(theta)
 
     def getPitchFromTarget(self):
         f = self.focal_length
         v = self.center[1]
         cy = self.mat.shape[2]/2
-        return math.atan((v-cy)/f)
+        theta  = math.atan((v-cy)/f) + math.radians(self.camTilt)
+        return math.degrees(theta)
 
 """
 ---------- CAMERA CONFIG -------------
