@@ -211,6 +211,10 @@ class Target:
         theta  = math.atan((v-cy)/f) + math.radians(self.camTilt)
         return math.degrees(theta)
 
+    def getTargetHeight(self):
+        theta = self.getPitchFromTarget()
+        return getDistanceFromTarget() * math.tan(theta)
+
 """
 ---------- CAMERA CONFIG -------------
 """
