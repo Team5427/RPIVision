@@ -141,8 +141,8 @@ class Target:
         self.Tpixel = self.topRightPt[0] - self.topLeftPt[0]
 
         self.center = [0,0]
-        self.center[1] = ((self.topLeftPt[1]+self.bottomPtVal)/2) + ((self.topRightPt[1]+self.bottomPtVal)/2)/2
-        self.center[0] = (self.topLeftPt[0]+self.topRightPt[0])/2
+        self.center[1] = ((self.topLeftPt[1]+self.bottomPtVal)/2) + ((self.topRightPt[1]+self.bottomPtVal)/2)/2 #y
+        self.center[0] = (self.topLeftPt[0]+self.topRightPt[0])/2 #x
 
         self.leftValDiff = abs(self.topLeftPt[1] - self.bottomPtVal)
         self.rightValDiff = abs(self.topRightPt[1] - self.bottomPtVal)
@@ -213,7 +213,7 @@ class Target:
 
     def getTargetHeight(self):
         theta = self.getPitchFromTarget()
-        return getDistanceFromTarget() * math.tan(theta)
+        return self.getDistanceFromTarget() * math.tan(theta)
 
 """
 ---------- CAMERA CONFIG -------------
@@ -459,7 +459,7 @@ if __name__ == "__main__":
 
 
     while True:
-        timestamp, img = cvSink.grabFrame(img)
+        timestamp, img = cvsink.grabFrame(img)
         output, filteredPoints = processTarget(img)
 
         ballOrDriver = table.getEntry("ballOrDriver").getBoolean(False)
