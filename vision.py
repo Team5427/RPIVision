@@ -21,6 +21,72 @@ import numpy as np
 import math
 from enum import Enum
 
+"""
+---------- BALL PROCESSING -----------
+"""
+def processBall(source0):
+    #HSL INPUTS BOUNDS
+    hue = [0, 37.5757]
+    sat = [34.397, 255]
+    val = [0, 255]
+
+    #HSL THRESHOLD STEP
+    out = cv2.cvtColor(source0, cv2.COLOR_BGR2HLS)
+    hslthresholdoutput = cv2.inRange(out, (hue[0], val[0], sat[0]),  (hue[1], val[1], sat[1]))
+    
+    #FIND CONTOURS STEP
+    findcontoursinput = hslthresholdoutput
+    external_only = False
+    if(external_only):
+        mode = cv2.RETR_EXTERNAL
+    else:
+        mode = cv2.RETR_LIST
+    method = cv2.CHAIN_APPROX_SIMPLE
+    im2, contours, hierarchy =cv2.findContours(findcontoursinput, mode=mode, method=method)
+    findcontoursoutput = contours
+
+    #FILTER CONTOURS STEP
+    filtercontourscontours = findcontoursoutput
+    input_contours = filtercontourscontours
+
+    min_area = 200.0
+    min_perimeter = 0.0
+    min_width = 20.0
+    max_width = 1000.0
+    min_height = 20.0
+    max_height = 1000
+    solidity = [0, 100]
+    max_vertex_count = 1000000
+    min_vertex_count = 0
+    min_ratio = 0
+    max_ratio = 1000
+
+    output = []
+    for contour in input_contours:
+        x,y,w,h = cv2.boundingRect(contour)
+        if (w < min_width or w > max_width):
+            continue
+        if (h < min_height or h > max_height):
+            continue
+        area = cv2.contourArea(contour)
+        if (area < min_area):
+            continue
+        if (cv2.arcLength(contour, True) < min_perimeter):
+            continue
+        hull = cv2.convexHull(contour)
+        solid = 100 * area / cv2.contourArea(hull)
+        if (solid < solidity[0] or solid > solidity[1]):
+            continue
+        if (len(contour) < min_vertex_count or len(contour) > max_vertex_count):
+            continue
+        ratio = (float)(w) / h
+        if (ratio < min_ratio or ratio > max_ratio):
+            continue
+        output.append(contour)
+
+    filtercontoursoutput = output
+    return hslthresholdoutput, output
+
 
 """
 --------- TARGET PROCESSING ----------
@@ -33,9 +99,9 @@ def processTarget(source0):
     """
 
     #HSL INPUTS BOUNDS
-    hue = [44, 83.0]
-    sat = [85, 255.0]
-    val = [21, 255]
+    hue = [37, 101.0]
+    sat = [179, 255.0]
+    val = [71, 255]
 
     #HSL THRESHOLD STEP
     # hslthreshholdinput = source0
@@ -57,14 +123,14 @@ def processTarget(source0):
     filtercontourscontours = findcontoursoutput
     input_contours = filtercontourscontours
 
-    min_area = 20.0
-    min_perimeter = 0.0
-    min_width = 20.0
+    min_area = 1.0
+    min_perimeter = 1.0
+    min_width = 1.0
     max_width = 4000.0
-    min_height = 20.0
+    min_height = 1.0
     max_height = 4000
     solidity = [0, 100]
-    max_vertex_count = 1000000
+    max_vertex_count = 100000
     min_vertex_count = 0
     min_ratio = 0
     max_ratio = 1000
@@ -110,13 +176,13 @@ class Target:
         self.rightValDiff = 0
         self.proportion = 0
         self.size = 0
-        self.mat = mat
+        self.mat = mat #shape(height, width, 3)
         self.points = []
         self.targetWidth = 3.25
         self.FOV_horizontal = 61
         self.FOV_vertical = 34.3
         self.FOV_pixel = self.mat.shape[1]
-        self.Tft = 2.8125 #3' 3.75"
+        self.Tft = 2.8125
         self.focal_length =  self.mat.shape[1]/(2 * math.tan((self.FOV_horizontal/2)))
         self.camHeight = 3
         self.camTilt = 0 #degrees not radians
@@ -191,9 +257,11 @@ class Target:
     def getSize(self):
         return self.size
 
+    #NEEDS TO BE TESTED LATER, DO NOT USE
     def getDistanceFromTarget(self):
-        theta = math.radians(self.FOV_horizontal/2)
-        return self.Tft * self.FOV_pixel/(2*self.Tpixel* math.tan(theta))
+        # theta = math.radians(self.FOV_horizontal/2)
+        # return self.Tft * self.FOV_pixel/(2*self.Tpixel* math.tan(theta))
+        return 1/(math.tan(self.getPitchFromTarget())/6.8125)
 
     def getYawFromTarget(self):
         f = self.focal_length
@@ -205,13 +273,15 @@ class Target:
     def getPitchFromTarget(self):
         f = self.focal_length
         v = self.center[1]
-        cy = self.mat.shape[2]/2
-        theta  = math.atan((v-cy)/f) + math.radians(self.camTilt)
+        cy = self.mat.shape[0]/2
+        theta  = math.atan((cy-v)/f) + math.radians(self.camTilt)
         return math.degrees(theta)
 
-    def getTargetHeight(self):
-        theta = self.getPitchFromTarget()
-        return self.getDistanceFromTarget() * math.tan(theta)
+    #USE THIS FOR THE MODEL FOR DISTANCE
+    def getDistanceFromTargetModel(self):
+        x = self.size
+        return x
+
 
 """
 ---------- CAMERA CONFIG -------------
@@ -460,7 +530,6 @@ if __name__ == "__main__":
         timestamp, img = cvsink.grabFrame(img)
         output, filteredPoints = processTarget(img)
 
-        ballOrDriver = table.getEntry("ballOrDriver").getBoolean(False)
         outputstream.putFrame(output)
 
         validTargets = []
@@ -506,9 +575,6 @@ if __name__ == "__main__":
 
             pitchFromTarget = table.getEntry("pitchFromTarget")
             pitchFromTarget.setDouble(biggestTarget.getPitchFromTarget())
-
-            targetHeight = table.getEntry("targetHeight")
-            targetHeight.setDouble(biggestTarget.getTargetHeight())
 
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
