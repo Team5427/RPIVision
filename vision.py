@@ -116,8 +116,9 @@ class Target:
         self.FOV_horizontal = 61
         self.FOV_vertical = 34.3
         self.FOV_pixel = self.mat.shape[1]
-        self.Tft = 3.2708333 #3' 3.75"
+        self.Tft = 2.8125 #3' 3.75"
         self.focal_length =  self.mat.shape[1]/(2 * math.tan((self.FOV_horizontal/2)))
+        self.camHeight = 3
         self.camTilt = 0 #degrees not radians
 
 
@@ -194,9 +195,6 @@ class Target:
         theta = math.radians(self.FOV_horizontal/2)
         return self.Tft * self.FOV_pixel/(2*self.Tpixel* math.tan(theta))
 
-    """
-    Returns yaw in degrees
-    """
     def getYawFromTarget(self):
         f = self.focal_length
         u = self.center[0]
