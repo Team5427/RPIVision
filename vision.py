@@ -205,17 +205,17 @@ class Target:
             if(pt[1] > self.bottomPtVal):
                 self.bottomPtVal = pt[1]
            
-        self.Tpixel = self.topRightPt[0] - self.topLeftPt[0]
+        self.Tpixel = self.topRightPt[0] - self.topLeftPt[0] #width of top of target
 
         self.center = [0,0]
-        self.center[1] = ((self.topLeftPt[1]+self.bottomPtVal)/2) + ((self.topRightPt[1]+self.bottomPtVal)/2)/2 #y
-        self.center[0] = (self.topLeftPt[0]+self.topRightPt[0])/2 #x
+        self.center[1] = ((self.topLeftPt[1]+self.bottomPtVal)/2) + ((self.topRightPt[1]+self.bottomPtVal)/2)/2 # y value of center
+        self.center[0] = (self.topLeftPt[0]+self.topRightPt[0])/2 # x value of center
 
-        self.leftValDiff = abs(self.topLeftPt[1] - self.bottomPtVal)
-        self.rightValDiff = abs(self.topRightPt[1] - self.bottomPtVal)
+        self.leftValDiff = abs(self.topLeftPt[1] - self.bottomPtVal) # height of left
+        self.rightValDiff = abs(self.topRightPt[1] - self.bottomPtVal) # height of right
 
-        self.proportion = self.leftValDiff/self.rightValDiff
-        self.size = ((self.leftValDiff+self.rightValDiff)/2)
+        self.proportion = self.leftValDiff/self.rightValDiff # proportion of left side:right side
+        self.size = ((self.leftValDiff+self.rightValDiff)/2) # average height of target
         
 
     def getLeftValDiff(self):
@@ -578,5 +578,4 @@ if __name__ == "__main__":
 
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
-            print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
             targetExists.setBoolean(False)
