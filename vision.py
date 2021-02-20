@@ -161,6 +161,36 @@ def processTarget(source0):
     filtercontoursoutput = output
     return hslthresholdoutput, output
 
+class Ball:
+
+    def __init____(self, pts, mat):
+
+        self.topPt = None
+        self.bottomPt = None
+        self.mat = mat
+        self.points = []
+
+        for i in range(pts.shape[0]):
+            self.points.append(pts[i])
+
+        self.topPt = points[0]
+        self.bottomPt = points[0]
+
+        for pt in self.points:
+          
+            if(pt[1] > self.topPt[1]):
+                self.topPt = pt
+            if(pt[1] < self.bottomPt[1]):
+                self.bottomPtVal = pt
+        
+        self.middlePtX = (topPt[0] + bottomPt[0])/2
+        self.middlePtY = (topPt[1] + bottomPt[1])/2
+
+    def getBallX(self):
+        return self.middlePtX
+
+    def getBallY(self):
+        return self.middlePtY     
 
 class Target:
     """ A Target object that identifies if target is real"""
@@ -529,6 +559,8 @@ if __name__ == "__main__":
     while True:
         timestamp, img = cvsink.grabFrame(img)
         output, filteredPoints = processTarget(img)
+
+
 
         outputstream.putFrame(output)
 
