@@ -170,19 +170,21 @@ class Ball:
         self.mat = mat
         self.points = []
 
+        #processing set of points in contour
         for i in range(pts.shape[0]):
             self.points.append(pts[i])
 
         self.topPt = points[0]
         self.bottomPt = points[0]
 
+        #using y value to find top and bottom of ball
         for pt in self.points:
-          
             if(pt[1] > self.topPt[1]):
                 self.topPt = pt
             if(pt[1] < self.bottomPt[1]):
                 self.bottomPtVal = pt
         
+        #finds middle point of the ball (x and y)
         self.middlePtX = (topPt[0] + bottomPt[0])/2
         self.middlePtY = (topPt[1] + bottomPt[1])/2
 
@@ -190,7 +192,16 @@ class Ball:
         return self.middlePtX
 
     def getBallY(self):
-        return self.middlePtY     
+        return self.middlePtY   
+
+    def getHeight(self):  
+        return topPt[1] - bottomPt[1]
+
+    def getBallDistanceFromCenter(self):
+        return self.middlePtX - self.mat.shape[1]/2
+
+    def getBallCentered(self):
+        return abs(getBallDistanceFromCenter()) < 4
 
 class Target:
     """ A Target object that identifies if target is real"""
@@ -213,13 +224,14 @@ class Target:
         self.FOV_vertical = 34.3
         self.FOV_pixel = self.mat.shape[1]
         self.Tft = 2.8125
-        self.focal_length =  self.mat.shape[1]/(2 * math.tan((self.FOV_horizontal/2)))
+        self.focal_length = self.mat.shape[1]/(2 * math.tan((self.FOV_horizontal/2)))
         self.camHeight = 3
         self.camTilt = 0 #degrees not radians
 
 
         for i in range(pts.shape[0]):
             self.points.append(pts[i])
+
 
         self.topLeftPt = points[0]
         self.topRightPt = points[0]
@@ -360,7 +372,7 @@ class Target:
 
 configFile = "/boot/frc.json"
 
-class CameraConfig: pass
+class CameraConfig: pass #nO
 
 team = None
 server = False
@@ -550,35 +562,34 @@ if __name__ == "__main__":
     cvsink2 = cam2.getVideo()
 
     outputstream = CameraServer.getInstance().putVideo("TargetProcessed", 160, 120)
-    #outputstream2 = CameraServer.getInstance().putVideo("BallProcessed", 160 , 120)
+    outputstream2 = CameraServer.getInstance().putVideo("Ball Processed", 160 , 120)
 
     # loop forever (put all processing code here)
     img = np.zeros(shape=(120,160,3), dtype = np.uint8)
+    img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
 
     while True:
+
+         """ TARGET """
         timestamp, img = cvsink.grabFrame(img)
         output, filteredPoints = processTarget(img)
-
-
-
         outputstream.putFrame(output)
-
         validTargets = []
         biggestTarget = None
         points = None
         target = None
-        
+
+        #finds all valid targets in image
         for currentMat in filteredPoints:
             points = np.reshape(currentMat, (currentMat.shape[0], 2))
             target = Target(points, img)
             validTargets.append(target)
-        
-        targetExists = table.getEntry("targetExists")
 
+        #finds out if there is a target
+        targetExists = table.getEntry("targetExists")
         if(len(validTargets)> 0):
             targetExists.setBoolean(True)
-            
             biggestTarget = validTargets[0]
             for target in validTargets:
                 if target.getBiggestSideDifference() > biggestTarget.getBiggestSideDifference():
@@ -611,3 +622,46 @@ if __name__ == "__main__":
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
             targetExists.setBoolean(False)
+
+         """ BALL """
+        timestamp2, img2 = cvsink2.grabFrame(img2)
+        output2, filteredPoints2 = processBall(img2)
+        outputstream2.putFrame(output2)
+        validBalls = []
+        biggestBall = None
+        pointsBall = None
+        ball = None
+
+        #finds all valid targets in image
+        for currentMat in filteredPoints2:
+            pointsBall = np.reshape(currentMat, (currentMat.shape[0], 2))
+            ball = Ball(pointsBall, img2)
+            validBalls.append(ball)
+
+        #finds out if there is a target
+        ballExists = table.getEntry("ballExists")
+        if(len(validTargets)> 0):
+            ballExists.setBoolean(True)
+            biggestTarget = validTargets[0]
+            for ball in validBalls:
+                if ball.getHeight() > biggestBall.getHeight():
+                    biggestBall = ball
+
+            ballX = table.getEntry("ballX")
+            ballX.setDouble(biggestBall.getBallX())
+
+            ballY = table.getEntry("ballY")
+            ballY.setDouble(biggestBall.getBallY())
+
+            ballHeight = table.getEntry("ballHeight")
+            ballHeight.setDouble(biggestBall.getHeight())
+
+            isBallCentered = table.getEntry("isBallCentered")
+            isBallCentered.setBoolean(biggestBall.getBallCentered())
+
+            ballDistanceFromCenter = table.getEntry("ballDistanceFromCenter")
+            ballDistanceFromCenter.setDouble(biggestBall.getBallDistanceFromCenter())
+
+            print(table.getEntry("isBallCentered").getBoolean(False))
+        else:
+            ballExists.setBoolean(False)
