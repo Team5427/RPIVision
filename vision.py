@@ -24,68 +24,68 @@ from enum import Enum
 """
 ---------- BALL PROCESSING -----------
 """
-def processBall(source0):
-    #HSL INPUTS BOUNDS
-    hue = [0, 37.5757]
-    sat = [34.397, 255]
-    val = [0, 255]
+# def processBall(source0):
+#     #HSL INPUTS BOUNDS
+#     hue = [0, 37.5757]
+#     sat = [34.397, 255]
+#     val = [0, 255]
 
-    #HSL THRESHOLD STEP
-    out = cv2.cvtColor(source0, cv2.COLOR_BGR2HLS)
-    hslthresholdoutput = cv2.inRange(out, (hue[0], val[0], sat[0]),  (hue[1], val[1], sat[1]))
+#     #HSL THRESHOLD STEP
+#     out = cv2.cvtColor(source0, cv2.COLOR_BGR2HLS)
+#     hslthresholdoutput = cv2.inRange(out, (hue[0], val[0], sat[0]),  (hue[1], val[1], sat[1]))
     
-    #FIND CONTOURS STEP
-    findcontoursinput = hslthresholdoutput
-    external_only = False
-    if(external_only):
-        mode = cv2.RETR_EXTERNAL
-    else:
-        mode = cv2.RETR_LIST
-    method = cv2.CHAIN_APPROX_SIMPLE
-    im2, contours, hierarchy =cv2.findContours(findcontoursinput, mode=mode, method=method)
-    findcontoursoutput = contours
+#     #FIND CONTOURS STEP
+#     findcontoursinput = hslthresholdoutput
+#     external_only = False
+#     if(external_only):
+#         mode = cv2.RETR_EXTERNAL
+#     else:
+#         mode = cv2.RETR_LIST
+#     method = cv2.CHAIN_APPROX_SIMPLE
+#     im2, contours, hierarchy =cv2.findContours(findcontoursinput, mode=mode, method=method)
+#     findcontoursoutput = contours
 
-    #FILTER CONTOURS STEP
-    filtercontourscontours = findcontoursoutput
-    input_contours = filtercontourscontours
+#     #FILTER CONTOURS STEP
+#     filtercontourscontours = findcontoursoutput
+#     input_contours = filtercontourscontours
 
-    min_area = 200.0
-    min_perimeter = 0.0
-    min_width = 20.0
-    max_width = 1000.0
-    min_height = 20.0
-    max_height = 1000
-    solidity = [0, 100]
-    max_vertex_count = 1000000
-    min_vertex_count = 0
-    min_ratio = 0
-    max_ratio = 1000
+#     min_area = 200.0
+#     min_perimeter = 0.0
+#     min_width = 20.0
+#     max_width = 1000.0
+#     min_height = 20.0
+#     max_height = 1000
+#     solidity = [0, 100]
+#     max_vertex_count = 1000000
+#     min_vertex_count = 0
+#     min_ratio = 0
+#     max_ratio = 1000
 
-    output = []
-    for contour in input_contours:
-        x,y,w,h = cv2.boundingRect(contour)
-        if (w < min_width or w > max_width):
-            continue
-        if (h < min_height or h > max_height):
-            continue
-        area = cv2.contourArea(contour)
-        if (area < min_area):
-            continue
-        if (cv2.arcLength(contour, True) < min_perimeter):
-            continue
-        hull = cv2.convexHull(contour)
-        solid = 100 * area / cv2.contourArea(hull)
-        if (solid < solidity[0] or solid > solidity[1]):
-            continue
-        if (len(contour) < min_vertex_count or len(contour) > max_vertex_count):
-            continue
-        ratio = (float)(w) / h
-        if (ratio < min_ratio or ratio > max_ratio):
-            continue
-        output.append(contour)
+#     output = []
+#     for contour in input_contours:
+#         x,y,w,h = cv2.boundingRect(contour)
+#         if (w < min_width or w > max_width):
+#             continue
+#         if (h < min_height or h > max_height):
+#             continue
+#         area = cv2.contourArea(contour)
+#         if (area < min_area):
+#             continue
+#         if (cv2.arcLength(contour, True) < min_perimeter):
+#             continue
+#         hull = cv2.convexHull(contour)
+#         solid = 100 * area / cv2.contourArea(hull)
+#         if (solid < solidity[0] or solid > solidity[1]):
+#             continue
+#         if (len(contour) < min_vertex_count or len(contour) > max_vertex_count):
+#             continue
+#         ratio = (float)(w) / h
+#         if (ratio < min_ratio or ratio > max_ratio):
+#             continue
+#         output.append(contour)
 
-    filtercontoursoutput = output
-    return hslthresholdoutput, output
+#     filtercontoursoutput = output
+#     return hslthresholdoutput, output
 
 
 """
@@ -568,10 +568,9 @@ if __name__ == "__main__":
     img = np.zeros(shape=(120,160,3), dtype = np.uint8)
     # img2 = np.zeros(shape=(120,160,3), dtype = np.uint8)
 
-
     while True:
 
-         """ TARGET """
+        """ TARGET """
         timestamp, img = cvsink.grabFrame(img)
         output, filteredPoints = processTarget(img)
         outputstream.putFrame(output)
