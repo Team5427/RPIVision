@@ -22,73 +22,6 @@ import math
 from enum import Enum
 
 """
----------- BALL PROCESSING -----------
-"""
-# def processBall(source0):
-#     #HSL INPUTS BOUNDS
-#     hue = [0, 37.5757]
-#     sat = [34.397, 255]
-#     val = [0, 255]
-
-#     #HSL THRESHOLD STEP
-#     out = cv2.cvtColor(source0, cv2.COLOR_BGR2HLS)
-#     hslthresholdoutput = cv2.inRange(out, (hue[0], val[0], sat[0]),  (hue[1], val[1], sat[1]))
-    
-#     #FIND CONTOURS STEP
-#     findcontoursinput = hslthresholdoutput
-#     external_only = False
-#     if(external_only):
-#         mode = cv2.RETR_EXTERNAL
-#     else:
-#         mode = cv2.RETR_LIST
-#     method = cv2.CHAIN_APPROX_SIMPLE
-#     im2, contours, hierarchy =cv2.findContours(findcontoursinput, mode=mode, method=method)
-#     findcontoursoutput = contours
-
-#     #FILTER CONTOURS STEP
-#     filtercontourscontours = findcontoursoutput
-#     input_contours = filtercontourscontours
-
-#     min_area = 200.0
-#     min_perimeter = 0.0
-#     min_width = 20.0
-#     max_width = 1000.0
-#     min_height = 20.0
-#     max_height = 1000
-#     solidity = [0, 100]
-#     max_vertex_count = 1000000
-#     min_vertex_count = 0
-#     min_ratio = 0
-#     max_ratio = 1000
-
-#     output = []
-#     for contour in input_contours:
-#         x,y,w,h = cv2.boundingRect(contour)
-#         if (w < min_width or w > max_width):
-#             continue
-#         if (h < min_height or h > max_height):
-#             continue
-#         area = cv2.contourArea(contour)
-#         if (area < min_area):
-#             continue
-#         if (cv2.arcLength(contour, True) < min_perimeter):
-#             continue
-#         hull = cv2.convexHull(contour)
-#         solid = 100 * area / cv2.contourArea(hull)
-#         if (solid < solidity[0] or solid > solidity[1]):
-#             continue
-#         if (len(contour) < min_vertex_count or len(contour) > max_vertex_count):
-#             continue
-#         ratio = (float)(w) / h
-#         if (ratio < min_ratio or ratio > max_ratio):
-#             continue
-#         output.append(contour)
-
-#     filtercontoursoutput = output
-#     return hslthresholdoutput, output
-
-
-"""
 --------- TARGET PROCESSING ----------
 """
 
@@ -160,48 +93,6 @@ def processTarget(source0):
 
     filtercontoursoutput = output
     return hslthresholdoutput, output
-
-# class Ball:
-
-#     def __init____(self, pts, mat):
-
-#         self.topPt = None
-#         self.bottomPt = None
-#         self.mat = mat
-#         self.points = []
-
-#         #processing set of points in contour
-#         for i in range(pts.shape[0]):
-#             self.points.append(pts[i])
-
-#         self.topPt = points[0]
-#         self.bottomPt = points[0]
-
-#         #using y value to find top and bottom of ball
-#         for pt in self.points:
-#             if(pt[1] > self.topPt[1]):
-#                 self.topPt = pt
-#             if(pt[1] < self.bottomPt[1]):
-#                 self.bottomPtVal = pt
-        
-#         #finds middle point of the ball (x and y)
-#         self.middlePtX = (topPt[0] + bottomPt[0])/2
-#         self.middlePtY = (topPt[1] + bottomPt[1])/2
-
-#     def getBallX(self):
-#         return self.middlePtX
-
-#     def getBallY(self):
-#         return self.middlePtY   
-
-#     def getHeight(self):  
-#         return topPt[1] - bottomPt[1]
-
-#     def getBallDistanceFromCenter(self):
-#         return self.middlePtX - self.mat.shape[1]/2
-
-#     def getBallCentered(self):
-#         return abs(getBallDistanceFromCenter()) < 4
 
 class Target:
     """ A Target object that identifies if target is real"""
@@ -621,46 +512,3 @@ if __name__ == "__main__":
             print(table.getEntry("isTargetCentered").getBoolean(False))
         else:
             targetExists.setBoolean(False)
-
-         """ BALL """
-        # timestamp2, img2 = cvsink2.grabFrame(img2)
-        # output2, filteredPoints2 = processBall(img2)
-        # outputstream2.putFrame(output2)
-        # validBalls = []
-        # biggestBall = None
-        # pointsBall = None
-        # ball = None
-
-        # #finds all valid targets in image
-        # for currentMat in filteredPoints2:
-        #     pointsBall = np.reshape(currentMat, (currentMat.shape[0], 2))
-        #     ball = Ball(pointsBall, img2)
-        #     validBalls.append(ball)
-
-        # #finds out if there is a target
-        # ballExists = table.getEntry("ballExists")
-        # if(len(validTargets)> 0):
-        #     ballExists.setBoolean(True)
-        #     biggestTarget = validTargets[0]
-        #     for ball in validBalls:
-        #         if ball.getHeight() > biggestBall.getHeight():
-        #             biggestBall = ball
-
-        #     ballX = table.getEntry("ballX")
-        #     ballX.setDouble(biggestBall.getBallX())
-
-        #     ballY = table.getEntry("ballY")
-        #     ballY.setDouble(biggestBall.getBallY())
-
-        #     ballHeight = table.getEntry("ballHeight")
-        #     ballHeight.setDouble(biggestBall.getHeight())
-
-        #     isBallCentered = table.getEntry("isBallCentered")
-        #     isBallCentered.setBoolean(biggestBall.getBallCentered())
-
-        #     ballDistanceFromCenter = table.getEntry("ballDistanceFromCenter")
-        #     ballDistanceFromCenter.setDouble(biggestBall.getBallDistanceFromCenter())
-
-        #     print(table.getEntry("isBallCentered").getBoolean(False))
-        # else:
-        #     ballExists.setBoolean(False)
